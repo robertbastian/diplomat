@@ -61,6 +61,14 @@ export class MyStruct {
     set g(value) {
         this.#g = value;
     }
+
+    #h;
+    get h()  {
+        return this.#h;
+    }
+    set h(value) {
+        this.#h = value;
+    }
     constructor() {
         if (arguments.length > 0 && arguments[0] === diplomatRuntime.internalConstructor) {
             this.#fromFFI(...Array.prototype.slice.call(arguments, 1));
@@ -73,6 +81,7 @@ export class MyStruct {
             this.#e = arguments[4];
             this.#f = arguments[5];
             this.#g = arguments[6];
+            this.#h = arguments[7];
         }
     }
 
@@ -83,7 +92,7 @@ export class MyStruct {
         functionCleanupArena,
         appendArrayMap
     ) {
-        return [this.#a, this.#b, this.#c, /* [5 x i8] padding */ 0, 0, 0, 0, 0 /* end padding */, this.#d, this.#e, this.#f, this.#g.ffiValue, /* [1 x i32] padding */ 0 /* end padding */]
+        return [this.#a, this.#b, this.#c, /* [5 x i8] padding */ 0, 0, 0, 0, 0 /* end padding */, this.#d, this.#e, this.#f, this.#g.ffiValue, ...this.#h._intoFFI(functionCleanupArena, {})]
     }
 
     _writeToArrayBuffer(
@@ -99,6 +108,7 @@ export class MyStruct {
         diplomatRuntime.writeToArrayBuffer(arrayBuffer, offset + 16, this.#e, Int32Array);
         diplomatRuntime.writeToArrayBuffer(arrayBuffer, offset + 20, this.#f, Uint32Array);
         diplomatRuntime.writeToArrayBuffer(arrayBuffer, offset + 24, this.#g.ffiValue, Int32Array);
+        this.#h._writeToArrayBuffer(arrayBuffer, offset + 28, functionCleanupArena, {});
     }
 
     // This struct contains borrowed fields, so this takes in a list of
@@ -121,6 +131,8 @@ export class MyStruct {
         this.#f = fDeref;
         const gDeref = diplomatRuntime.enumDiscriminant(wasm, ptr + 24);
         this.#g = new MyEnum(diplomatRuntime.internalConstructor, gDeref);
+        const hDeref = ptr + 28;
+        this.#h = new MyZst(diplomatRuntime.internalConstructor);
     }
 
     static new_() {

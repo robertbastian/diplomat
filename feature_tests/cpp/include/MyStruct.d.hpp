@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include "MyEnum.d.hpp"
+#include "MyZst.d.hpp"
 #include "diplomat_runtime.hpp"
 
 struct MyZst;
@@ -39,6 +40,7 @@ struct MyStruct {
   int32_t e;
   char32_t f;
   MyEnum g;
+  MyZst h;
 
   inline static MyStruct new_();
 

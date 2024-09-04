@@ -432,14 +432,16 @@ impl<'a, 'cx> TyGenContext<'a, 'cx> {
         let mut needs_temp_arena = false;
 
         if let Some(param_self) = method.param_self.as_ref() {
-            visitor.visit_param(&param_self.ty.clone().into(), "this");
+            if !self.tcx.resolve_type(id).is_zst() {
+                visitor.visit_param(&param_self.ty.clone().into(), "this");
 
-            param_types_ffi.push(self.gen_self_type_name_ffi(&param_self.ty, false));
-            param_types_ffi_cast.push(self.gen_self_type_name_ffi(&param_self.ty, true));
-            param_conversions.push(self.gen_dart_to_c_self(&param_self.ty, "temp.arena"));
-            param_names_ffi.push("self".into());
-            if matches!(param_self.ty, hir::SelfType::Struct(..)) {
-                needs_temp_arena = true;
+                param_types_ffi.push(self.gen_self_type_name_ffi(&param_self.ty, false));
+                param_types_ffi_cast.push(self.gen_self_type_name_ffi(&param_self.ty, true));
+                param_conversions.push(self.gen_dart_to_c_self(&param_self.ty, "temp.arena"));
+                param_names_ffi.push("self".into());
+                if matches!(param_self.ty, hir::SelfType::Struct(..)) {
+                    needs_temp_arena = true;
+                }
             }
         }
 
@@ -449,8 +451,8 @@ impl<'a, 'cx> TyGenContext<'a, 'cx> {
             let param_name = self.formatter.fmt_param_name(param.name.as_str());
             param_decls_dart.push(format!("{} {param_name}", self.gen_type_name(&param.ty),));
             param_names_ffi.push(param_name.clone());
-            param_types_ffi.push(self.gen_type_name_ffi(&param.ty, false));
-            param_types_ffi_cast.push(self.gen_type_name_ffi(&param.ty, true));
+            param_types_ffi.extend(self.gen_type_name_ffi(&param.ty, false));
+            param_types_ffi_cast.extend(self.gen_type_name_ffi(&param.ty, true));
 
             let param_borrow_kind = visitor.visit_param(&param.ty, &param_name);
 
@@ -728,9 +730,13 @@ impl<'a, 'cx> TyGenContext<'a, 'cx> {
     }
 
     /// Generates a type's Dart FFI type.
-    fn gen_type_name_ffi<P: TyPosition>(&mut self, ty: &Type<P>, cast: bool) -> Cow<'cx, str> {
+    fn gen_type_name_ffi<P: TyPosition>(
+        &mut self,
+        ty: &Type<P>,
+        cast: bool,
+    ) -> Option<Cow<'cx, str>> {
         match *ty {
-            Type::Primitive(prim) => self.formatter.fmt_primitive_as_ffi(prim, cast).into(),
+            Type::Primitive(prim) => Some(self.formatter.fmt_primitive_as_ffi(prim, cast).into()),
             Type::Opaque(ref op) => {
                 let op_id = op.tcx_id.into();
                 let type_name = self.formatter.fmt_type_name(op_id);
@@ -738,8 +744,9 @@ impl<'a, 'cx> TyGenContext<'a, 'cx> {
                     self.errors
                         .push_error(format!("Found usage of disabled type {type_name}"))
                 }
-                self.formatter.fmt_opaque_as_ffi().into()
+                Some(self.formatter.fmt_opaque_as_ffi().into())
             }
+            Type::Struct(ref st) if self.tcx.resolve_type(st.id()).is_zst() => None,
             Type::Struct(ref st) => {
                 let id = st.id();
                 let type_name = self.formatter.fmt_type_name(id);
@@ -747,7 +754,7 @@ impl<'a, 'cx> TyGenContext<'a, 'cx> {
                     self.errors
                         .push_error(format!("Found usage of disabled type {type_name}"))
                 }
-                format!("_{type_name}Ffi").into()
+                Some(format!("_{type_name}Ffi").into())
             }
             Type::Enum(ref e) => {
                 let id = e.tcx_id.into();
@@ -756,10 +763,10 @@ impl<'a, 'cx> TyGenContext<'a, 'cx> {
                     self.errors
                         .push_error(format!("Found usage of disabled type {type_name}"))
                 }
-                self.formatter.fmt_enum_as_ffi(cast).into()
+                Some(self.formatter.fmt_enum_as_ffi(cast).into())
             }
-            Type::Slice(s) => self.gen_slice(&s).into(),
-            Type::DiplomatOption(ref inner) => self.gen_result(Some(inner), None).into(),
+            Type::Slice(s) => Some(self.gen_slice(&s).into()),
+            Type::DiplomatOption(ref inner) => Some(self.gen_result(Some(inner), None).into()),
             _ => unreachable!("unknown AST/HIR variant"),
         }
     }
@@ -779,7 +786,9 @@ impl<'a, 'cx> TyGenContext<'a, 'cx> {
                 self.formatter.fmt_ffi_void()
             }
             .into(),
-            ReturnType::Infallible(SuccessType::OutType(ref o)) => self.gen_type_name_ffi(o, cast),
+            ReturnType::Infallible(SuccessType::OutType(ref o)) => self
+                .gen_type_name_ffi(o, cast)
+                .unwrap_or(Cow::Borrowed(self.formatter.fmt_void())),
             ReturnType::Fallible(ref ok, ref err) => {
                 self.gen_result(ok.as_type(), err.as_ref()).into()
             }
@@ -1068,13 +1077,15 @@ impl<'a, 'cx> TyGenContext<'a, 'cx> {
             hir::Slice::Str(_, encoding) => {
                 self.formatter.fmt_string_element_as_ffi(*encoding).into()
             }
-            hir::Slice::Primitive(_, p) => {
-                self.gen_type_name_ffi(&Type::<OutputOnly>::Primitive(*p), false)
-            }
-            hir::Slice::Strs(encoding) => self.gen_type_name_ffi(
-                &Type::<OutputOnly>::Slice(hir::Slice::Str(None, *encoding)),
-                false,
-            ),
+            hir::Slice::Primitive(_, p) => self
+                .gen_type_name_ffi(&Type::<OutputOnly>::Primitive(*p), false)
+                .unwrap(),
+            hir::Slice::Strs(encoding) => self
+                .gen_type_name_ffi(
+                    &Type::<OutputOnly>::Slice(hir::Slice::Str(None, *encoding)),
+                    false,
+                )
+                .unwrap(),
             _ => unreachable!("unknown AST/HIR variant"),
         }
     }
@@ -1234,12 +1245,14 @@ impl<'a, 'cx> TyGenContext<'a, 'cx> {
     ) -> String {
         let name = format!(
             "_Result{}{}",
-            &self
-                .formatter
-                .fmt_type_as_ident(ok.map(|o| self.gen_type_name_ffi(o, false)).as_deref()),
-            &self
-                .formatter
-                .fmt_type_as_ident(err.map(|o| self.gen_type_name_ffi(o, false)).as_deref())
+            &self.formatter.fmt_type_as_ident(
+                ok.map(|o| self.gen_type_name_ffi(o, false).unwrap_or(self.formatter.fmt_void().into()))
+                    .as_deref()
+            ),
+            &self.formatter.fmt_type_as_ident(
+                err.map(|o| self.gen_type_name_ffi(o, false).unwrap_or(self.formatter.fmt_void().into()))
+                    .as_deref()
+            )
         );
 
         if self.helper_classes.contains_key(&name) {
@@ -1276,12 +1289,12 @@ impl<'a, 'cx> TyGenContext<'a, 'cx> {
                 hir::Type::Enum(_) => format!("@{}()", self.formatter.fmt_enum_as_ffi(false)),
                 _ => String::new(),
             };
-            let ty = self.gen_type_name_ffi(ty, true);
-            (annotation, ty)
+            let ty = self.gen_type_name_ffi(ty, true)?;
+            Some((annotation, ty))
         };
 
-        let ok = ok.map(&mut gen_decl);
-        let err = err.map(&mut gen_decl);
+        let ok = ok.and_then(&mut gen_decl);
+        let err = err.and_then(&mut gen_decl);
 
         #[derive(askama::Template)]
         #[template(path = "dart/result.dart.jinja", escape = "none")]
@@ -1354,7 +1367,7 @@ struct FieldInfo<'a, P: TyPosition> {
     name: Cow<'a, str>,
     ty: &'a Type<P>,
     annotation: Option<&'static str>,
-    ffi_cast_type_name: Cow<'a, str>,
+    ffi_cast_type_name: Option<Cow<'a, str>>,
     dart_type_name: Cow<'a, str>,
     c_to_dart: Cow<'a, str>,
     dart_to_c: Cow<'a, str>,

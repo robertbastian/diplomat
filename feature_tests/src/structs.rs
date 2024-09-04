@@ -43,9 +43,16 @@ pub mod ffi {
         e: i32,
         f: DiplomatChar,
         g: MyEnum,
+        h: MyZst,
     }
 
     pub struct MyZst;
+
+    impl MyZst {
+        pub fn method(self, foo: u8) -> u32 {
+            foo as u32
+        }
+    }
 
     impl Opaque {
         #[diplomat::attr(auto, constructor)]

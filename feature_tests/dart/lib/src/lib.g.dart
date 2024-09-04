@@ -456,25 +456,6 @@ final class _ResultUint8Void extends ffi.Struct {
   }
 }
 
-final class _ResultVoidMyZstFfi extends ffi.Struct {
-  
-
-  @ffi.Bool()
-  external bool isOk;
-
-  
-  factory _ResultVoidMyZstFfi.ok() {
-    final struct = ffi.Struct.create<_ResultVoidMyZstFfi>();
-    struct.isOk = true;
-    return struct;
-  }
-  factory _ResultVoidMyZstFfi.err() {
-    final struct = ffi.Struct.create<_ResultVoidMyZstFfi>();
-    struct.isOk = false;
-    return struct;
-  }
-}
-
 final class _ResultVoidOpaqueUnion extends ffi.Union {
 
   external ffi.Pointer<ffi.Opaque> err;
@@ -496,6 +477,25 @@ final class _ResultVoidOpaque extends ffi.Struct {
     final struct = ffi.Struct.create<_ResultVoidOpaque>();
     struct.isOk = false;
     struct.union.err = val;
+    return struct;
+  }
+}
+
+final class _ResultVoidvoid extends ffi.Struct {
+  
+
+  @ffi.Bool()
+  external bool isOk;
+
+  
+  factory _ResultVoidvoid.ok() {
+    final struct = ffi.Struct.create<_ResultVoidvoid>();
+    struct.isOk = true;
+    return struct;
+  }
+  factory _ResultVoidvoid.err() {
+    final struct = ffi.Struct.create<_ResultVoidvoid>();
+    struct.isOk = false;
     return struct;
   }
 }

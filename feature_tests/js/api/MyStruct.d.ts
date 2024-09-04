@@ -25,7 +25,10 @@ export class MyStruct {
 
     get g() : MyEnum;
     set g(value: MyEnum); 
-    constructor(a: number, b: boolean, c: number, d: bigint, e: number, f: codepoint, g: MyEnum);
+
+    get h() : MyZst;
+    set h(value: MyZst); 
+    constructor(a: number, b: boolean, c: number, d: bigint, e: number, f: codepoint, g: MyEnum, h: MyZst);
 
     static new_(): MyStruct;
 
