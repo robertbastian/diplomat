@@ -7,8 +7,8 @@ export * as FixedDecimalDemo from "./FixedDecimal.mjs";
 import RenderTerminiFixedDecimal from "./a.mjs";
 
 
-let termini = Object.assign({
-    "FixedDecimalFormatter.formatWrite": {
+let termini = new Array(
+    {
         func: FixedDecimalFormatterDemo.formatWrite,
         // For avoiding webpacking minifying issues:
         funcName: "FixedDecimalFormatter.formatWrite",
@@ -43,7 +43,7 @@ let termini = Object.assign({
         ]
     },
 
-    "FixedDecimal.toString": {
+    {
         func: FixedDecimalDemo.toString,
         // For avoiding webpacking minifying issues:
         funcName: "FixedDecimal.toString",

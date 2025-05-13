@@ -261,6 +261,8 @@ pub(crate) fn run<'tcx>(
         }
     }
 
+    out_info.termini.sort_by(|a, b| a.function_name.cmp(&b.function_name));
+
     files.add_file("index.mjs".into(), out_info.render().unwrap());
 
     let hide_default_renderer = unwrapped_conf.hide_default_renderer.unwrap_or(false);

@@ -20,8 +20,8 @@ export * as Utf16WrapDemo from "./Utf16Wrap.mjs";
 
 
 
-let termini = Object.assign({
-    "CyclicStructA.cyclicOut": {
+let termini = new Array(
+    {
         func: CyclicStructADemo.cyclicOut,
         // For avoiding webpacking minifying issues:
         funcName: "CyclicStructA.cyclicOut",
@@ -36,7 +36,22 @@ let termini = Object.assign({
         ]
     },
 
-    "CyclicStructA.doubleCyclicOut": {
+    {
+        func: CyclicStructCDemo.cyclicOut,
+        // For avoiding webpacking minifying issues:
+        funcName: "CyclicStructC.cyclicOut",
+        parameters: [
+            
+            {
+                name: "CyclicStructC:A:A:Field",
+                type: "number",
+                typeUse: "number"
+            }
+            
+        ]
+    },
+
+    {
         func: CyclicStructADemo.doubleCyclicOut,
         // For avoiding webpacking minifying issues:
         funcName: "CyclicStructA.doubleCyclicOut",
@@ -57,7 +72,46 @@ let termini = Object.assign({
         ]
     },
 
-    "CyclicStructA.getterOut": {
+    {
+        func: OpaqueDemo.getDebugStr,
+        // For avoiding webpacking minifying issues:
+        funcName: "Opaque.getDebugStr",
+        parameters: [
+            
+        ]
+    },
+
+    {
+        func: Utf16WrapDemo.getDebugStr,
+        // For avoiding webpacking minifying issues:
+        funcName: "Utf16Wrap.getDebugStr",
+        parameters: [
+            
+            {
+                name: "Utf16Wrap:Input",
+                type: "string",
+                typeUse: "string"
+            }
+            
+        ]
+    },
+
+    {
+        func: MyStringDemo.getStr,
+        // For avoiding webpacking minifying issues:
+        funcName: "MyString.getStr",
+        parameters: [
+            
+            {
+                name: "MyString:V",
+                type: "string",
+                typeUse: "string"
+            }
+            
+        ]
+    },
+
+    {
         func: CyclicStructADemo.getterOut,
         // For avoiding webpacking minifying issues:
         funcName: "CyclicStructA.getterOut",
@@ -72,22 +126,7 @@ let termini = Object.assign({
         ]
     },
 
-    "CyclicStructC.cyclicOut": {
-        func: CyclicStructCDemo.cyclicOut,
-        // For avoiding webpacking minifying issues:
-        funcName: "CyclicStructC.cyclicOut",
-        parameters: [
-            
-            {
-                name: "CyclicStructC:A:A:Field",
-                type: "number",
-                typeUse: "number"
-            }
-            
-        ]
-    },
-
-    "StructWithSlices.returnLast": {
+    {
         func: StructWithSlicesDemo.returnLast,
         // For avoiding webpacking minifying issues:
         funcName: "StructWithSlices.returnLast",
@@ -108,52 +147,7 @@ let termini = Object.assign({
         ]
     },
 
-    "OptionString.write": {
-        func: OptionStringDemo.write,
-        // For avoiding webpacking minifying issues:
-        funcName: "OptionString.write",
-        parameters: [
-            
-            {
-                name: "OptionString:DiplomatStr",
-                type: "string",
-                typeUse: "string"
-            }
-            
-        ]
-    },
-
-    "Float64Vec.toString": {
-        func: Float64VecDemo.toString,
-        // For avoiding webpacking minifying issues:
-        funcName: "Float64Vec.toString",
-        parameters: [
-            
-            {
-                name: "Float64Vec:V",
-                type: "Array<number>",
-                typeUse: "Array<number>"
-            }
-            
-        ]
-    },
-
-    "MyString.getStr": {
-        func: MyStringDemo.getStr,
-        // For avoiding webpacking minifying issues:
-        funcName: "MyString.getStr",
-        parameters: [
-            
-            {
-                name: "MyString:V",
-                type: "string",
-                typeUse: "string"
-            }
-            
-        ]
-    },
-
-    "MyString.stringTransform": {
+    {
         func: MyStringDemo.stringTransform,
         // For avoiding webpacking minifying issues:
         funcName: "MyString.stringTransform",
@@ -168,7 +162,22 @@ let termini = Object.assign({
         ]
     },
 
-    "MyOpaqueEnum.toString": {
+    {
+        func: Float64VecDemo.toString,
+        // For avoiding webpacking minifying issues:
+        funcName: "Float64Vec.toString",
+        parameters: [
+            
+            {
+                name: "Float64Vec:V",
+                type: "Array<number>",
+                typeUse: "Array<number>"
+            }
+            
+        ]
+    },
+
+    {
         func: MyOpaqueEnumDemo.toString,
         // For avoiding webpacking minifying issues:
         funcName: "MyOpaqueEnum.toString",
@@ -177,23 +186,14 @@ let termini = Object.assign({
         ]
     },
 
-    "Opaque.getDebugStr": {
-        func: OpaqueDemo.getDebugStr,
+    {
+        func: OptionStringDemo.write,
         // For avoiding webpacking minifying issues:
-        funcName: "Opaque.getDebugStr",
-        parameters: [
-            
-        ]
-    },
-
-    "Utf16Wrap.getDebugStr": {
-        func: Utf16WrapDemo.getDebugStr,
-        // For avoiding webpacking minifying issues:
-        funcName: "Utf16Wrap.getDebugStr",
+        funcName: "OptionString.write",
         parameters: [
             
             {
-                name: "Utf16Wrap:Input",
+                name: "OptionString:DiplomatStr",
                 type: "string",
                 typeUse: "string"
             }

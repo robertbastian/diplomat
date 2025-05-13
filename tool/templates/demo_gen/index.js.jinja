@@ -7,9 +7,9 @@ export * as {{terminus.type_name}}Demo from "./{{terminus.js_file_name}}";
 {{ i }}
 {% endfor %}
 
-let termini = Object.assign({
+let termini = new Array(
 {%- for terminus in termini %}
-    "{{terminus.type_name}}.{{terminus.function_name}}": {
+    {
         func: {{terminus.type_name}}Demo.{{terminus.function_name}},
         // For avoiding webpacking minifying issues:
         funcName: "{{terminus.type_name}}.{{terminus.function_name}}",
