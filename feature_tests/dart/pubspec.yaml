@@ -2,11 +2,12 @@ name: feature_tests
 version: 0.0.0
 
 environment:
-  sdk: '>=3.7.0 <3.8.0'
+  sdk: 3.9.0-105.0.dev
 
 dependencies:
   ffi: ^2.0.0
-  native_assets_cli: ^0.11.0
+  code_assets: ^0.19.0
+  hooks: ^0.19.0
   meta: ^1.12.0
 
 dev_dependencies:
