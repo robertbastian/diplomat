@@ -36,6 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc.js"></script>
@@ -92,10 +93,13 @@
                 sidebar = sidebar || 'visible';
             } else {
                 sidebar = 'hidden';
+                sidebar_toggle.checked = false;
             }
-            sidebar_toggle.checked = sidebar === 'visible';
-            html.classList.remove('sidebar-visible');
-            html.classList.add("sidebar-" + sidebar);
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
@@ -146,7 +150,12 @@
 
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -188,7 +197,7 @@ mod ffi {
 <pre><code class="language-cpp">  static diplomat::result&lt;std::unique_ptr&lt;Thingy&gt;, std::monostate&gt; try_create(const std::string_view string);
 </code></pre>
 <p><code>diplomat::result</code> is a type that can be found in the generated <a href="https://github.com/rust-diplomat/diplomat/blob/main/tool/src/cpp/runtime.hpp"><code>diplomat_runtime.hpp</code></a> file. The most basic APIs are <code>.is_ok()</code> and <code>.is_err()</code>, returning <code>bool</code>s, and <code>.ok()</code> and <code>.err()</code> returning <code>std::option</code>s. There are further APIs for constructing and manipulating these that can be found in the header file.</p>
-<p>On the JS side it will continue to return the <code>Thingy</code> class but it will <code>throw</code> the error (as an empty object in this case) in case of an error.</p>
+<p>On backends that do not support <code>Result</code>, they will instead throw an error (i.e., Python/Nanobind and JS).</p>
 
                     </main>
 
@@ -198,7 +207,7 @@ mod ffi {
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="writeable.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="callbacks.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -212,7 +221,7 @@ mod ffi {
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="writeable.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="callbacks.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -236,6 +245,7 @@ mod ffi {
         <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+
 
 
     </div>

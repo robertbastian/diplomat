@@ -37,6 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc.js"></script>
@@ -93,10 +94,13 @@
                 sidebar = sidebar || 'visible';
             } else {
                 sidebar = 'hidden';
+                sidebar_toggle.checked = false;
             }
-            sidebar_toggle.checked = sidebar === 'visible';
-            html.classList.remove('sidebar-visible');
-            html.classList.add("sidebar-" + sidebar);
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
@@ -147,7 +151,12 @@
 
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -618,7 +627,27 @@ mod ffi {
 <pre><code class="language-cpp">  static diplomat::result&lt;std::unique_ptr&lt;Thingy&gt;, std::monostate&gt; try_create(const std::string_view string);
 </code></pre>
 <p><code>diplomat::result</code> is a type that can be found in the generated <a href="https://github.com/rust-diplomat/diplomat/blob/main/tool/src/cpp/runtime.hpp"><code>diplomat_runtime.hpp</code></a> file. The most basic APIs are <code>.is_ok()</code> and <code>.is_err()</code>, returning <code>bool</code>s, and <code>.ok()</code> and <code>.err()</code> returning <code>std::option</code>s. There are further APIs for constructing and manipulating these that can be found in the header file.</p>
-<p>On the JS side it will continue to return the <code>Thingy</code> class but it will <code>throw</code> the error (as an empty object in this case) in case of an error.</p>
+<p>On backends that do not support <code>Result</code>, they will instead throw an error (i.e., Python/Nanobind and JS).</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="callbacks"><a class="header" href="#callbacks">Callbacks</a></h1>
+<p>Diplomat has limited, experimental support for exposing and working with callbacks. See <a href="https://github.com/rust-diplomat/diplomat/issues/146">tracking issue</a>
+Currently these are only supported in the C++, kotlin, and nanobind backends.</p>
+<p>Functions taking callbacks as parameters take the form</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[diplomat::bridge]
+impl MyType{
+    pub fn acceptsCallback(&amp;self, impl Fn())
+}
+<span class="boring">}</span></code></pre></pre>
+<p>or</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl MyType{
+    pub fn acceptsCallback(&amp;self, impl FnMut())
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The callback's parameters &amp; return types may be limited depending on the target language for now. Additional traits are not supported, however <code>+ 'static</code> may be given, which allows for moving the trait object into a <code>Box&lt;dyn Fn()&gt;</code>.</p>
+<p>Some backends may support callbacks accepting [mutable] references to opaque types as parameters, but lifetime parsing for these is not yet supported by any backend. Only anonymous lifetimes are allowed as a result, meaning that no such parameter may be guaranteed to live longer than a single invocation of the callback.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="returning-strings-writeables"><a class="header" href="#returning-strings-writeables">Returning strings: Writeables</a></h1>
 <p>Most languages have their own type to handle strings. To avoid unnecessary allocations, Diplomat supports <a href="https://docs.rs/diplomat-runtime/0.2.0/diplomat_runtime/struct.DiplomatWriteable.html"><code>DiplomatWriteable</code></a>, a type with a <code>Write</code> implementation which can be used to write to appropriate string types on the other side.</p>
 <p>For example, if we want to have methods that philosophically return a <code>String</code> or a <code>Result&lt;String&gt;</code>, we can do the following:</p>
@@ -758,6 +787,20 @@ mod ffi {
 </code></pre>
 <p>On the other hand, in JS, the JS object wrapping <code>MyFancyIterator</code> will internally stash a reference to the <code>MyFancyVec</code>, which will be noticed by the GC, keeping the vector alive as long as needed.</p>
 <p>This also works with non-opaque structs; you can have a function that takes in a struct where one field has a lifetime, and returns a different struct with a similar property, and Diplomat will document or GC-link the appropriate fields.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="macros"><a class="header" href="#macros">Macros</a></h1>
+<p>Diplomat has support for generating bindings with macro_rules!, with quite a few caveats:</p>
+<ol>
+<li>Any <code>macro_rules</code> definitions that you wish Diplomat to evaluate must use the <code>#[diplomat::macro_rules]</code> attribute.</li>
+<li>Macros can only contain a single arm. The arm can contain any syntax as defined , with three exceptions:
+<ul>
+<li>The <code>pat</code> and <code>stmt</code> MacroFragSpecs are currently forbidden.</li>
+<li>The <code>$(MacroMatch+) MacroRepSep? MacroRepOp</code> pattern is currently forbidden.</li>
+</ul>
+</li>
+<li>Macros can exist only in <code>#[diplomat::bridge] mod ... { ... }</code> blocks or <code>impl</code> blocks.</li>
+<li>Macros exist solely in the file you've defined them in. They must also be defined first.</li>
+<li>Macros do not use interpolation matchers, nor do they allow recursive usage of other <code>#[diplomat::macro_rules]</code> macros.</li>
+</ol>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="abi-namingrenaming"><a class="header" href="#abi-namingrenaming">ABI naming/renaming</a></h1>
 <p>As previously mentioned, the <code>#[diplomat::bridge]</code> macro from the <code>diplomat</code> crate will generate <code>extern "C"</code> functions for all methods expected to be exposed over FFI.</p>
 <p><em>By default</em>, the naming scheme for these types is <code>TypeName_method()</code>. For example, <code>Foo::bar()</code> becomes <code>Foo_bar()</code>.</p>
@@ -1082,6 +1125,41 @@ mod ffi {
 }
 <span class="boring">}</span></code></pre></pre>
 <p>In Dart, this will generate a <code>toString()</code> method.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="slices"><a class="header" href="#slices">Slices</a></h1>
+<h2 id="static-slices"><a class="header" href="#static-slices">Static Slices</a></h2>
+<p>(Supported by <code>c</code>, <code>cpp</code>, <code>kotlin</code>, <code>nanobind</code>, queried with <code>supports=static_slices</code>)</p>
+<p>Support for <code>&amp;'static</code> slices.</p>
+<h2 id="primitive-structs"><a class="header" href="#primitive-structs">Primitive Structs</a></h2>
+<p>(Supported by <code>c</code>, <code>cpp</code>, <code>nanobind</code>, queried with <code>supports=abi_compatibles</code>)</p>
+<p>Some Diplomat backends support providing slices of structs as function parameters:</p>
+<pre><code class="language-rs">#[diplomat::bridge]
+mod ffi {
+    #[diplomat::attr(auto, abi_compatible)]
+    struct Struct {
+        a : bool,
+        b : i32
+    }
+
+    impl Struct {
+        pub fn bar(slice : &amp;mut [Struct]) {}
+        pub fn baz(other_slice : &amp;[Struct]) {}
+    }
+}
+</code></pre>
+<p>Mapping Diplomat types from the bound language to the C API can vary based on what types are in the struct. To reduce this complexity, slices of structs come with some restrictions:</p>
+<ul>
+<li>The struct type must have <code>#[diplomat::attr(auto, abi_compatible)]</code> attribute.</li>
+<li>The struct can only have fields that are either:
+<ul>
+<li>Primitive</li>
+<li>Nested primitive structs</li>
+</ul>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="references"><a class="header" href="#references">References</a></h1>
+<h2 id="struct"><a class="header" href="#struct">&amp;Struct</a></h2>
+<p>(Supported by <code>c</code>, <code>cpp</code>, and <code>nanobind</code>, queried with <code>supports=struct_refs</code>)</p>
+<p>Structs can be borrowed mutably or immutably as parameters to functions, but nowhere else.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="notes-on-diplomat-and-safety"><a class="header" href="#notes-on-diplomat-and-safety">Notes on Diplomat and safety</a></h1>
 <p>Overall, Diplomat is intended to provide safe FFI. However, there are some caveats around the current state of Diplomat's safety.</p>
 <h2 id="the-safety-of-the-bridge-crate-when-called-from-rust"><a class="header" href="#the-safety-of-the-bridge-crate-when-called-from-rust">The safety of the bridge crate when called from Rust</a></h2>
@@ -1701,7 +1779,7 @@ for how to use them</p>
 <li>Feature tests: <a href="https://github.com/rust-diplomat/diplomat/tree/main/feature_tests/src/">rust source</a>, <a href="https://github.com/rust-diplomat/diplomat/tree/main/feature_tests/kotlin/somelib/src/test/kotlin/dev/diplomattest/somelib">kotlin usage</a></li>
 <li>Example: <a href="https://github.com/rust-diplomat/diplomat/tree/main/example/src/">rust source</a>, <a href="https://github.com/rust-diplomat/diplomat/tree/main/example/kotlin/somelib/src/test/kotlin/dev/diplomattest/somelib">kotlin usage</a></li>
 </ul>
-<h3 id="callbacks"><a class="header" href="#callbacks">Callbacks</a></h3>
+<h3 id="callbacks-1"><a class="header" href="#callbacks-1">Callbacks</a></h3>
 <p>The kotlin backend supports passing kotlin functions and closures as callbacks to native code. To do this you need to add the
 enable the <code>jvm-callback-support</code> feature when you add  the diplomat runtime to your project. For examples on how to use them
 look in the <code>feature_tests</code> directory of the diplomat project. This is a bit conceptually different to the rest of diplomat
@@ -1752,6 +1830,7 @@ so here some specific examples</p>
             window.setTimeout(window.print, 100);
         });
         </script>
+
 
     </div>
     </body>
